@@ -40,9 +40,9 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
  */
 contract DecentralizedStableCoin is ERC20Burnable, Ownable {
     /* errors */
-    error DecentralizedStableCoin_MustBeMoreThanZero();
-    error DecentralizedStableCoin_BurnAmountExceedsBalance();
-    error DecentralizedStableCoin_NotZeroAddress();
+    error DecentralizedStableCoin__MustBeMoreThanZero();
+    error DecentralizedStableCoin__BurnAmountExceedsBalance();
+    error DecentralizedStableCoin__NotZeroAddress();
 
     /*
      * @dev ERC20Burnable is ERC20
@@ -57,10 +57,10 @@ contract DecentralizedStableCoin is ERC20Burnable, Ownable {
     function burn(uint256 _amount) public override onlyOwner {
         uint256 balance = balanceOf(msg.sender);
         if (_amount <= 0) {
-            revert DecentralizedStableCoin_MustBeMoreThanZero();
+            revert DecentralizedStableCoin__MustBeMoreThanZero();
         }
         if (balance < _amount) {
-            revert DecentralizedStableCoin_BurnAmountExceedsBalance();
+            revert DecentralizedStableCoin__BurnAmountExceedsBalance();
         }
         /* call the burn function from the parent contract : super cause overriding 'burn'*/
         super.burn(_amount);
@@ -71,10 +71,10 @@ contract DecentralizedStableCoin is ERC20Burnable, Ownable {
         uint256 _amount
     ) public onlyOwner returns (bool) {
         if (_to == address(0)) {
-            revert DecentralizedStableCoin_NotZeroAddress();
+            revert DecentralizedStableCoin__NotZeroAddress();
         }
         if (_amount <= 0) {
-            revert DecentralizedStableCoin_MustBeMoreThanZero();
+            revert DecentralizedStableCoin__MustBeMoreThanZero();
         }
         /* we don't override '_mint', only call it */
         _mint(_to, _amount);
