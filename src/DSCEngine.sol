@@ -81,6 +81,11 @@ contract DSCEngine is ReentrancyGuard {
         address indexed token,
         uint256 indexed amount
     );
+    event CollateralRedeemed(
+        address indexed user,
+        address indexed token,
+        uint256 indexed amount
+    );
 
     /* modifiers */
     modifier moreThanZero(uint256 amount) {
@@ -119,7 +124,21 @@ contract DSCEngine is ReentrancyGuard {
     }
 
     /* external functions */
-    function depositCollateralAndMintDsc() external {}
+
+    /*
+     * @notice This function will deposit collateral and mint DSC in one transaction
+     * @param tokenCollateralAddress The address of the token to be used as collateral
+     * @param collateralAmount The amount of collateral to be deposited
+     * @param dscAmountToMint The amount of DSC to mint
+     */
+    function depositCollateralAndMintDsc(
+        address tokenCollateralAddress,
+        uint256 collateralAmount,
+        uint256 dscAmountToMint
+    ) external {
+        depositCollateral(tokenCollateralAddress, collateralAmount);
+        mintDsc(dscAmountToMint);
+    }
 
     /*
      * @notice Follows CEI pattern (checks in modofiers)
@@ -130,7 +149,7 @@ contract DSCEngine is ReentrancyGuard {
         address tokenCollateralAddress,
         uint256 collateralAmount
     )
-        external
+        public
         moreThanZero(collateralAmount)
         isAllowedToken(tokenCollateralAddress)
         nonReentrant
@@ -154,9 +173,34 @@ contract DSCEngine is ReentrancyGuard {
         }
     }
 
-    function redeemCollateralForDsc() external {}
+    /*
+     * @notice This funciton burns DSC and redeems collateral in one transaction
+     * @param collateralTokenAddress The address of the token to be used as collateral
+     * @param collateralAmount The amount of collateral to be redeemed
+     * @param dscAmountToBurn The amount of DSC to burn
+     */
+    function redeemCollateralForDsc(address collateralTokenAddress, uint256 collateralAmount, uint256 dscAmountToBurn) external {
+        burnDsc(dscAmountToBurn);
+        redeemCollateral(collateralTokenAddress, collateralAmount);
+        // redeemCollateral already checks health factor
+    }
 
-    function redeemCollateral() external {}
+    /*
+     * @notice In order to redeem collateral :
+     * 1. health factor must be over 1 AFTER the redemption
+     * DRY => don't repeat yourself : need future refactor
+     */
+    function redeemCollateral(address collateralTokenAddress, uint256 collateralAmount) public moreThanZero(collateralAmount) nonReentrant() {
+        // if they redeem too much solidity make revert due to underflow check
+        s_userToCollateralDeposited[msg.sender][collateralTokenAddress] -= collateralAmount;
+        emit CollateralRedeemed(msg.sender, collateralTokenAddress, collateralAmount);
+
+        bool succes = IERC20(collateralTokenAddress).transfer(msg.sender, collateralAmount);
+        if (!succes) {
+            revert DSCEngine__TransferFailed();
+        }
+        _revertIfHealthFactorIsBroken(msg.sender);
+    } 
 
     /*
      * Check if the collateral value > DSC value, checks PriceFeed, values..
@@ -167,7 +211,7 @@ contract DSCEngine is ReentrancyGuard {
      */
     function mintDsc(
         uint256 dscAmountToMint
-    ) external moreThanZero(dscAmountToMint) nonReentrant {
+    ) public moreThanZero(dscAmountToMint) nonReentrant {
         s_userToDscMinted[msg.sender] += dscAmountToMint;
         // if they minted too much should revert
         _revertIfHealthFactorIsBroken(msg.sender);
@@ -179,7 +223,15 @@ contract DSCEngine is ReentrancyGuard {
         }
     }
 
-    function burnDsc() external {}
+    function burnDsc(uint256 amount) public moreThanZero(amount) {
+        s_userToDscMinted[msg.sender] -= amount;
+        bool success = i_dsc.transferFrom(msg.sender, address(this), amount);
+        if (!success) {
+            revert DSCEngine__TransferFailed();
+        }
+        i_dsc.burn(amount);
+        _revertIfHealthFactorIsBroken(msg.sender); // Shouldn't be hit due to the burn. High probality of being removed
+    }
 
     function liquidate() external {}
 
