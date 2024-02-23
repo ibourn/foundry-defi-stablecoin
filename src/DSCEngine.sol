@@ -265,8 +265,6 @@ contract DSCEngine is ReentrancyGuard {
         _revertIfHealthFactorIsBroken(msg.sender);
     }
 
-    function getHealthFactor() external view returns (uint256) {}
-
     /* private & internal functions */
 
     /*
@@ -396,5 +394,49 @@ contract DSCEngine is ReentrancyGuard {
         // return price * amount; // too big : (1000 * 1e8) * (1000 * 1e18) = 1e26
         // => (1000 * 1e8 *(1e10)) * (1000 * 1e18) = 1e26
         return (uint256(price) * ADDITIONNAL_FEED_PRECISION * amount) / PRECISION;
+    }
+
+    function getDsc() external view returns (address) {
+        return address(i_dsc);
+    }
+
+    function getCollateralTokens() external view returns (address[] memory) {
+        return s_collateralTokens;
+    }
+
+    function getCollateralTokenPriceFeed(address token) public view returns (address) {
+        return s_tokenToPriceFeed[token];
+    }
+
+    function getCollateralBalanceOfUser(address user, address token) external view returns (uint256) {
+        return s_userToCollateralDeposited[user][token];
+    }
+
+    function getAccountInformation(address user)
+        external
+        view
+        returns (uint256 totalDscMinted, uint256 totalCollateralValueInUsd)
+    {
+        return _getAccountInformation(user);
+    }
+
+    function getAdditionalFeedPrecision() external pure returns (uint256) {
+        return ADDITIONNAL_FEED_PRECISION;
+    }
+
+    function getPrecision() external pure returns (uint256) {
+        return PRECISION;
+    }
+
+    function getMinHealthFactor() external pure returns (uint256) {
+        return MIN_HEALTH_FACTOR;
+    }
+
+    function getHealthFactor(address user) external view returns (uint256) {
+        return _healthFactor(user);
+    }
+
+    function getLiquidationThreshold() external pure returns (uint256) {
+        return LIQUIDATION_THRESHOLD;
     }
 }
