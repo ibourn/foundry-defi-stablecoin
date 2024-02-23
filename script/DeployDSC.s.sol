@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.20;
 
-import {Script} from "forge-std/Script.sol";
+import {Script, console} from "forge-std/Script.sol";
 import {DecentralizedStableCoin} from "../src/DecentralizedStableCoin.sol";
 import {DSCEngine} from "../src/DSCEngine.sol";
 import {HelperConfig} from "./HelperConfig.s.sol";
@@ -11,7 +11,7 @@ contract DeployDSC is Script {
     address[] public tokenAddresses;
     address[] public priceFeedAddresses;
 
-    function run() external returns (DecentralizedStableCoin, DSCEngine) {
+    function run() external returns (DecentralizedStableCoin, DSCEngine, HelperConfig) {
         HelperConfig config = new HelperConfig();
 
         (
@@ -24,6 +24,9 @@ contract DeployDSC is Script {
         tokenAddresses = [weth, wbtc];
         priceFeedAddresses = [wethUsdPriceFeed, wbtcUsdPriceFeed];
 
+        console.log("DeployDSC / tokenAddresses: weth %s, wbtc %s", weth, wbtc);
+        console.log("DeployDSC / priceFeedAddresses: weth %s, wbtc %s ", wethUsdPriceFeed, wbtcUsdPriceFeed);
+
         vm.startBroadcast();
         DecentralizedStableCoin dsc = new DecentralizedStableCoin();
         DSCEngine dscEngine = new DSCEngine(
@@ -35,6 +38,9 @@ contract DeployDSC is Script {
         dsc.transferOwnership(address(dscEngine));
         vm.stopBroadcast();
 
-        return (dsc, dscEngine);
+        console.log("DeployDSC / dsc: ", address(dsc));
+        console.log("DeployDSC / dscEngine: ", address(dscEngine));
+
+        return (dsc, dscEngine, config);
     }
 }

@@ -31,6 +31,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {DecentralizedStableCoin} from "./DecentralizedStableCoin.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import {console} from "forge-std/Script.sol";
 
 /*
  * @title DSCEngine
@@ -108,6 +109,7 @@ contract DSCEngine is ReentrancyGuard {
         for (uint256 i; i < tokenAdresses.length; ) {
             s_tokenToPriceFeed[tokenAdresses[i]] = priceFeedAddresses[i];
             s_collateralTokens.push(tokenAdresses[i]);
+            console.log("DSCEngine / constructor : tokenAdresses[%s] %s => priceFeed %s ", i, tokenAdresses[i], priceFeedAddresses[i]);
             // i always inferior to tokenAdresses.length
             unchecked {
                 ++i;
@@ -264,7 +266,11 @@ contract DSCEngine is ReentrancyGuard {
         AggregatorV3Interface priceFeed = AggregatorV3Interface(
             s_tokenToPriceFeed[token]
         );
+        console.log("DSCEngine / getUsdValue : token %s, amount %s", token, amount);
+        console.log("DSCEngine / getUsdValue : priceFeed mapping/result %s / %s", s_tokenToPriceFeed[token], address(priceFeed));
+
         (, int256 price, , , ) = priceFeed.latestRoundData();
+        console.log("DSCEngine / getUsdValue : price %s", uint256(price));
         // ex: 1 ETH = 1000$
         // The return value from CL will be 1000 * 1e8 (or 10^8) cause Eth/USD & BTC/USD have 8 decimals
         // return price * amount; // too big : (1000 * 1e8) * (1000 * 1e18) = 1e26
