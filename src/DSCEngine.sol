@@ -268,6 +268,22 @@ contract DSCEngine is ReentrancyGuard {
     /* private & internal functions */
 
     /*
+     * @notice Returns the haelth factor corresponding to the total DSC minted and the total collateral value in USD
+     * @param totalDscMinted The total amount of DSC minted
+     * @param collateralValueInUsd The total collateral value in USD
+     */
+    function _calculateHealthFactor(uint256 totalDscMinted, uint256 collateralValueInUsd)
+        internal
+        pure
+        returns (uint256)
+    {
+        // if no DSC minted, return max value (it avoids division by 0)
+        if (totalDscMinted == 0) return type(uint256).max;
+        uint256 collateralAdjustedForThreshold = (collateralValueInUsd * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECISION;
+        return (collateralAdjustedForThreshold * PRECISION) / totalDscMinted;
+    }
+
+    /*
      * @dev Low level inrernatl function, do not call unless funciton calling it is checking for health factor being broken
      * @param onBehalfOf The address of the user to burn DSC for
      * @param dscFrom The address of the user to burn DSC from
@@ -324,15 +340,16 @@ contract DSCEngine is ReentrancyGuard {
         // total collateral value
         (uint256 totalDscMinted, uint256 totalCollateralValueInUsd) = _getAccountInformation(user);
 
-        uint256 collateralAdjustedForThreshold =
-            (totalCollateralValueInUsd * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECISION; // consider 50% of the collateral value
+        // uint256 collateralAdjustedForThreshold =
+        //     (totalCollateralValueInUsd * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECISION; // consider 50% of the collateral value
 
-        // $150 ETH / 100 DSC = 1.5
-        // adjusted : 150 * 50 / 100 => 75 / 100 = 0.75 => HF < 1
+        // // $150 ETH / 100 DSC = 1.5
+        // // adjusted : 150 * 50 / 100 => 75 / 100 = 0.75 => HF < 1
 
-        // $1000 ETH / 100 DSC = 10
-        // adjusted : 1000 * 50 / 100 => 500 / 100 = 5 => HF > 1
-        return (collateralAdjustedForThreshold * PRECISION) / totalDscMinted;
+        // // $1000 ETH / 100 DSC = 10
+        // // adjusted : 1000 * 50 / 100 => 500 / 100 = 5 => HF > 1
+        // return (collateralAdjustedForThreshold * PRECISION) / totalDscMinted;
+        return _calculateHealthFactor(totalDscMinted, totalCollateralValueInUsd);
     }
 
     /*
@@ -434,6 +451,14 @@ contract DSCEngine is ReentrancyGuard {
 
     function getHealthFactor(address user) external view returns (uint256) {
         return _healthFactor(user);
+    }
+
+    function calculateHealthFactor(uint256 totalDscMinted, uint256 collateralValueInUsd)
+        external
+        pure
+        returns (uint256)
+    {
+        return _calculateHealthFactor(totalDscMinted, collateralValueInUsd);
     }
 
     function getLiquidationThreshold() external pure returns (uint256) {
