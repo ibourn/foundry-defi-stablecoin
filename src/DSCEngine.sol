@@ -224,6 +224,7 @@ contract DSCEngine is ReentrancyGuard {
     }
 
     /*
+     * @notice The liquidator need to have amount of DSC to cover the debt (will receive the equivalent in collateral + bonus)
      * @notice If someone is almost undercollateralized, we will pay you to liquidate them
      * ex : $100 ETH backing 50 DSC, then ETH price drops 
      * -> $75 ETH backing 50 DSC => liquidator take 75$ backing and burn off 50 DSC
@@ -254,8 +255,17 @@ contract DSCEngine is ReentrancyGuard {
         // And sweep extra ammounts in treasury
         uint256 collateralBonus = (tokenAmountFromDebtCovered * LIQUIDATION_BONUS) / LIQUIDATION_PRECISION;
         uint256 totalCollateralToRedeem = tokenAmountFromDebtCovered + collateralBonus;
+
+        // As bonus is fixed, pb if can't redeem enough
+        // https://www.codehawks.com/finding/clm81m6ub01jtw9rukyr1h50o
+        // uint256 totalDepositedCollateral = s_userToCollateralDeposited[user][collateralTokenAddress];
+        // if (tokenAmountFromDebtCovered < totalDepositedCollateral && totalCollateralToRedeem > totalDepositedCollateral)
+        // {
+        //     totalCollateralToRedeem = totalDepositedCollateral;
+        // }
+
         _redeemCollateral(user, msg.sender, collateralTokenAddress, totalCollateralToRedeem);
-        // Burn the DSC (now in the liquidator's possession)
+        // Burn the DSC (transfer from liquidator to this contract and burn it)
         _burnDsc(user, msg.sender, dscDebtToCover);
         // Check if the user's health factor is now above 1
         uint256 endingHealthFactor = _healthFactor(user);
@@ -283,7 +293,14 @@ contract DSCEngine is ReentrancyGuard {
         return (collateralAdjustedForThreshold * PRECISION) / totalDscMinted;
     }
 
+    /**
+     * !!! But what about liquidator DSC ?
+     * he mint to pay off debt then his DSC are transfered to the contract to be burned
+     * So he has a loan but how to burn it ? => he can't now more send DSC to the contract
+     */
+
     /*
+     * @notice To burn DSC : transfer DSC from user to this contract and burn it
      * @dev Low level inrernatl function, do not call unless funciton calling it is checking for health factor being broken
      * @param onBehalfOf The address of the user to burn DSC for
      * @param dscFrom The address of the user to burn DSC from
@@ -463,5 +480,9 @@ contract DSCEngine is ReentrancyGuard {
 
     function getLiquidationThreshold() external pure returns (uint256) {
         return LIQUIDATION_THRESHOLD;
+    }
+
+    function getLiquidationBonus() external pure returns (uint256) {
+        return LIQUIDATION_BONUS;
     }
 }
