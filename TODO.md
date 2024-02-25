@@ -4,3 +4,5 @@
 2. Stability mechanism (minting) : Algorithmic (decentralized)
    1. can only mint the stablecoin with enough collateral
 3. Collateral : Exogenous (cryptos) : ETH, BTC
+
+=> What are ou invariants/properties ? => to write statefull & stateless test
