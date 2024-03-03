@@ -14,32 +14,22 @@ contract DeployDSC is Script {
     function run() external returns (DecentralizedStableCoin, DSCEngine, HelperConfig) {
         HelperConfig config = new HelperConfig();
 
-        (
-            address wethUsdPriceFeed,
-            address wbtcUsdPriceFeed,
-            address weth,
-            address wbtc,
-            uint256 deployerKey
-        ) = config.activeNetworkConfig();
+        (address wethUsdPriceFeed, address wbtcUsdPriceFeed, address weth, address wbtc,) = config.activeNetworkConfig();
         tokenAddresses = [weth, wbtc];
         priceFeedAddresses = [wethUsdPriceFeed, wbtcUsdPriceFeed];
 
-        console.log("DeployDSC / tokenAddresses: weth %s, wbtc %s", weth, wbtc);
-        console.log("DeployDSC / priceFeedAddresses: weth %s, wbtc %s ", wethUsdPriceFeed, wbtcUsdPriceFeed);
+        // console.log("DeployDSC / tokenAddresses: weth %s, wbtc %s", weth, wbtc);
+        // console.log("DeployDSC / priceFeedAddresses: weth %s, wbtc %s ", wethUsdPriceFeed, wbtcUsdPriceFeed);
 
         vm.startBroadcast();
         DecentralizedStableCoin dsc = new DecentralizedStableCoin();
-        DSCEngine dscEngine = new DSCEngine(
-            tokenAddresses,
-            priceFeedAddresses,
-            address(dsc)
-        );
+        DSCEngine dscEngine = new DSCEngine(tokenAddresses, priceFeedAddresses, address(dsc));
 
         dsc.transferOwnership(address(dscEngine));
         vm.stopBroadcast();
 
-        console.log("DeployDSC / dsc: ", address(dsc));
-        console.log("DeployDSC / dscEngine: ", address(dscEngine));
+        // console.log("DeployDSC / dsc: ", address(dsc));
+        // console.log("DeployDSC / dscEngine: ", address(dscEngine));
 
         return (dsc, dscEngine, config);
     }

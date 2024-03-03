@@ -6,3 +6,9 @@
 3. Collateral : Exogenous (cryptos) : ETH, BTC
 
 => What are ou invariants/properties ? => to write statefull & stateless test
+
+=> next :
+
+- proper oracle use
+- more test
+- s-c audit preparation

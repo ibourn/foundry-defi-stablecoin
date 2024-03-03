@@ -167,7 +167,7 @@ contract DSCEngineTest is Test {
         assertEq(userBalance, AMOUNT_TO_MINT);
     }
 
-    function testRevertsIfMintedDscBreaksHealthFactor() public {
+    function test_RevertsIfMintedDscBreaksHealthFactor() public {
         (, int256 price,,,) = MockV3Aggregator(wethUsdPriceFeed).latestRoundData();
         // get amount of DSC to mint equivalent to the collateral amount
         uint256 amountToMint =
@@ -253,7 +253,7 @@ contract DSCEngineTest is Test {
         dscEngine.burnDsc(1);
     }
 
-    function testCanBurnDsc() public depositedCollateralAndMintedDsc {
+    function test_CanBurnDsc() public depositedCollateralAndMintedDsc {
         vm.startPrank(USER);
         dsc.approve(address(dscEngine), AMOUNT_TO_MINT);
         dscEngine.burnDsc(AMOUNT_TO_MINT);
@@ -436,6 +436,38 @@ contract DSCEngineTest is Test {
         // he then should burn it with the equivalent received from the liquidation
         (uint256 liquidatorDscMinted,) = dscEngine.getAccountInformation(LIQUIDATOR);
         assertEq(liquidatorDscMinted, AMOUNT_TO_MINT);
+    }
+
+    // TRY bug => liquidator can't burn DSC (he has balance but we transfered it to the contract to burn it)
+    // FAIL. Reason: ERC20InsufficientBalance(0x0C88b4C83333fBF7C6469bFF99449bA16BCBaB63, 0, 100000000000000000000 [1e20]
+    // function test_LiquidatorCanBurnDscAfterLiquidation() public liquidated {
+    //     (uint256 liquidatorDscMinted,) = dscEngine.getAccountInformation(LIQUIDATOR);
+    //     console.log("liquidatorDscMinted after liquidation : %s", liquidatorDscMinted);
+
+    //     vm.startPrank(LIQUIDATOR);
+    //     dsc.approve(address(dscEngine), liquidatorDscMinted);
+    //     dscEngine.burnDsc(liquidatorDscMinted);
+    //     vm.stopPrank();
+
+    //     uint256 liquidatorDscBalance = dsc.balanceOf(LIQUIDATOR);
+    //     console.log("liquidatorDscBalance After burn : %s", liquidatorDscBalance);
+    //     assertEq(liquidatorDscBalance, 0);
+    // }
+
+    function test_LiquidatorHasNoDscAfterLiquidation() public liquidated {
+        (uint256 liquidatorDscMinted,) = dscEngine.getAccountInformation(LIQUIDATOR);
+        // console.log("liquidatorDscMinted after liquidation : %s", liquidatorDscMinted);
+
+        // vm.startPrank(LIQUIDATOR);
+        // dsc.approve(address(dscEngine), liquidatorDscMinted);
+        // dscEngine.burnDsc(liquidatorDscMinted);
+        // vm.stopPrank();
+
+        uint256 liquidatorDscBalance = dsc.balanceOf(LIQUIDATOR);
+        console.log("dscEngine : liquidatorDscMinted After burn : %s", liquidatorDscBalance);
+        console.log("dsc : liquidatorDscBalance After burn : %s", liquidatorDscBalance);
+        assertEq(liquidatorDscMinted, 0);
+        assertEq(liquidatorDscBalance, 0);
     }
 
     // function test_MustImproveHealthFactorOnLiquidation() public {

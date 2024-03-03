@@ -18,7 +18,7 @@ contract HelperConfig is Script {
     uint8 public constant DECIMALS = 8;
     int256 public constant ETH_USD_PRICE = 2000e8; // 2000 * 10 ** DECIMALS
     int256 public constant BTC_USD_PRICE = 1000e8; // 1000 * 10 ** DECIMALS
-    uint256 public constant ETH_INITIAL_BALANCE = 1000 * 10 ** DECIMALS; // 1000e8
+    uint256 public constant ETH_INITIAL_BALANCE = 1000 * 10 ** DECIMALS; // 1000e18; //1000 * 10 ** DECIMALS; // 1000e8
     uint256 public constant BTC_INITIAL_BALANCE = 1000 * 10 ** DECIMALS; // 1000e8
     uint256 public constant DEFAULT_ANVIL_KEY = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
 
@@ -57,10 +57,10 @@ contract HelperConfig is Script {
         ERC20Mock wbtcMock = new ERC20Mock("Wrapped Bitcoin", "WBTC", msg.sender, BTC_INITIAL_BALANCE);
         vm.stopBroadcast();
 
-        console.log("HelperConfig / getOrCreateAnvilEthConfig : wethUsdPriceFeed: ", address(wethUsdPriceFeed));
-        console.log("HelperConfig / getOrCreateAnvilEthConfig : wbtcUsdPriceFeed: ", address(wbtcUsdPriceFeed));
-        console.log("HelperConfig / getOrCreateAnvilEthConfig : wethMock: ", address(wethMock));
-        console.log("HelperConfig / getOrCreateAnvilEthConfig : wbtcMock: ", address(wbtcMock));
+        // console.log("HelperConfig / getOrCreateAnvilEthConfig : wethUsdPriceFeed: ", address(wethUsdPriceFeed));
+        // console.log("HelperConfig / getOrCreateAnvilEthConfig : wbtcUsdPriceFeed: ", address(wbtcUsdPriceFeed));
+        // console.log("HelperConfig / getOrCreateAnvilEthConfig : wethMock: ", address(wethMock));
+        // console.log("HelperConfig / getOrCreateAnvilEthConfig : wbtcMock: ", address(wbtcMock));
 
         return NetworkConfig({
             wethUsdPriceFeed: address(wethUsdPriceFeed),

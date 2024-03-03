@@ -32,6 +32,7 @@ import {DecentralizedStableCoin} from "./DecentralizedStableCoin.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import {console} from "forge-std/Script.sol";
+import {OracleLib} from "./libraries/OracleLib.sol";
 
 /*
  * @title DSCEngine
@@ -60,6 +61,9 @@ contract DSCEngine is ReentrancyGuard {
     error DSCEngine__MintFailed();
     error DSCEngine__HealthFactorIsOk();
     error DSCEngine__HealthFactorNotImproved();
+
+    /* type declarations */
+    using OracleLib for AggregatorV3Interface;
 
     /* state variables */
     uint256 private constant ADDITIONNAL_FEED_PRECISION = 1e10;
@@ -132,34 +136,34 @@ contract DSCEngine is ReentrancyGuard {
 
     /*
      * @notice This function will deposit collateral and mint DSC in one transaction
-     * @param tokenCollateralAddress The address of the token to be used as collateral
+     * @param collateralTokenAddress The address of the token to be used as collateral
      * @param collateralAmount The amount of collateral to be deposited
      * @param dscAmountToMint The amount of DSC to mint
      */
     function depositCollateralAndMintDsc(
-        address tokenCollateralAddress,
+        address collateralTokenAddress,
         uint256 collateralAmount,
         uint256 dscAmountToMint
     ) external {
-        depositCollateral(tokenCollateralAddress, collateralAmount);
+        depositCollateral(collateralTokenAddress, collateralAmount);
         mintDsc(dscAmountToMint);
     }
 
     /*
      * @notice Follows CEI pattern (checks in modofiers)
-     * @param tokenCollateralAddress The address of the token to be used as collateral
+     * @param collateralTokenAddress The address of the token to be used as collateral
      * @param collateralAmount The amount of collateral to be deposited
      */
-    function depositCollateral(address tokenCollateralAddress, uint256 collateralAmount)
+    function depositCollateral(address collateralTokenAddress, uint256 collateralAmount)
         public
         moreThanZero(collateralAmount)
-        isAllowedToken(tokenCollateralAddress)
+        isAllowedToken(collateralTokenAddress)
         nonReentrant
     {
-        s_userToCollateralDeposited[msg.sender][tokenCollateralAddress] += collateralAmount;
-        emit CollateralDeposited(msg.sender, tokenCollateralAddress, collateralAmount);
+        s_userToCollateralDeposited[msg.sender][collateralTokenAddress] += collateralAmount;
+        emit CollateralDeposited(msg.sender, collateralTokenAddress, collateralAmount);
 
-        bool succes = IERC20(tokenCollateralAddress).transferFrom(msg.sender, address(this), collateralAmount);
+        bool succes = IERC20(collateralTokenAddress).transferFrom(msg.sender, address(this), collateralAmount);
         if (!succes) {
             revert DSCEngine__TransferFailed();
         }
@@ -173,6 +177,8 @@ contract DSCEngine is ReentrancyGuard {
      */
     function redeemCollateralForDsc(address collateralTokenAddress, uint256 collateralAmount, uint256 dscAmountToBurn)
         external
+        moreThanZero(collateralAmount)
+        isAllowedToken(collateralTokenAddress)
     {
         burnDsc(dscAmountToBurn);
         redeemCollateral(collateralTokenAddress, collateralAmount);
@@ -189,6 +195,7 @@ contract DSCEngine is ReentrancyGuard {
     function redeemCollateral(address collateralTokenAddress, uint256 collateralAmount)
         public
         moreThanZero(collateralAmount)
+        isAllowedToken(collateralTokenAddress)
         nonReentrant
     {
         _redeemCollateral(msg.sender, msg.sender, collateralTokenAddress, collateralAmount);
@@ -308,6 +315,11 @@ contract DSCEngine is ReentrancyGuard {
      */
     function _burnDsc(address onBehalfOf, address dscFrom, uint256 dscAmountToBurn) private {
         s_userToDscMinted[onBehalfOf] -= dscAmountToBurn;
+
+        if (onBehalfOf != dscFrom) {
+            s_userToDscMinted[dscFrom] -= dscAmountToBurn;
+        }
+
         bool success = i_dsc.transferFrom(dscFrom, address(this), dscAmountToBurn);
         if (!success) {
             revert DSCEngine__TransferFailed();
@@ -390,7 +402,7 @@ contract DSCEngine is ReentrancyGuard {
      */
     function getTokenAmountFromUsd(address token, uint256 usdAmountinWei) public view returns (uint256) {
         AggregatorV3Interface priceFeed = AggregatorV3Interface(s_tokenToPriceFeed[token]);
-        (, int256 price,,,) = priceFeed.latestRoundData();
+        (, int256 price,,,) = priceFeed.staleCheckLatestRoundData();
         // Eth price : 2000$ & usdAmountinWei : 1000 => 1000e18 * 1e18 / 2000e8 * 1e10 = 0.5 ETH (5e17)
         return (usdAmountinWei * PRECISION) / (uint256(price) * ADDITIONNAL_FEED_PRECISION);
     }
@@ -416,13 +428,14 @@ contract DSCEngine is ReentrancyGuard {
 
     function getUsdValue(address token, uint256 amount) public view returns (uint256) {
         AggregatorV3Interface priceFeed = AggregatorV3Interface(s_tokenToPriceFeed[token]);
-        console.log("DSCEngine / getUsdValue : token %s, amount %s", token, amount);
-        console.log(
-            "DSCEngine / getUsdValue : priceFeed mapping/result %s / %s", s_tokenToPriceFeed[token], address(priceFeed)
-        );
+        // console.log("DSCEngine / getUsdValue : token %s, amount %s", token, amount);
+        // console.log(
+        //     "DSCEngine / getUsdValue : priceFeed mapping/result %s / %s", s_tokenToPriceFeed[token], address(priceFeed)
+        // );
 
-        (, int256 price,,,) = priceFeed.latestRoundData();
-        console.log("DSCEngine / getUsdValue : price %s", uint256(price));
+        (, int256 price,,,) = priceFeed.staleCheckLatestRoundData();
+        // console.log("DSCEngine / getUsdValue : price %s", uint256(price));
+
         // ex: 1 ETH = 1000$
         // The return value from CL will be 1000 * 1e8 (or 10^8) cause Eth/USD & BTC/USD have 8 decimals
         // return price * amount; // too big : (1000 * 1e8) * (1000 * 1e18) = 1e26

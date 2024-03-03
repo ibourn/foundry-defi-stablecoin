@@ -39,7 +39,7 @@ contract Invariants is StdInvariant, Test {
         targetContract(address(handler));
     }
 
-    function invariant_protocolMustHaveMoreValueThanTotalSupply() public {
+    function invariant_protocolMustHaveMoreValueThanTotalSupply() public view {
         // get the value of all the collateral in the protocol
         // compare it to all the debt (dsc)
         uint256 totalSupply = dsc.totalSupply();
@@ -58,35 +58,26 @@ contract Invariants is StdInvariant, Test {
     function invariant_gettersShouldNotRevert() public view {
         // call all the view functions
         // if any of them revert, the test will fail
-        // dscEngine.getTokenAmountFromUsd(address token, uint256 usdAmountinWei);
 
-        // dscEngine.getAccountCollateralValueInUsd(address user);
-
-        // dscEngine.getUsdValue(address token, uint256 amount);
-
+        // done
         dscEngine.getDsc();
-
         dscEngine.getCollateralTokens();
-
-        // dscEngine.getCollateralTokenPriceFeed(address token);
-
-        // dscEngine.getCollateralBalanceOfUser(address user, address token);
-
-        // dscEngine.getAccountInformation(address user);
-
         dscEngine.getAdditionalFeedPrecision();
-
         dscEngine.getPrecision();
-
         dscEngine.getMinHealthFactor();
-
-        // dscEngine.getHealthFactor(address user)
-
-        // dscEngine.calculateHealthFactor(uint256 totalDscMinted, uint256 collateralValueInUsd);
-
         dscEngine.getLiquidationThreshold();
-
         dscEngine.getLiquidationBonus();
+
+        // to finish
+        // dscEngine.getUsdValue(address token, uint256 amount);
+        // dscEngine.getCollateralTokenPriceFeed(weth);
+        // dscEngine.getCollateralTokenPriceFeed(wbtc);
+        // dscEngine.getTokenAmountFromUsd(address token, uint256 usdAmountinWei);
+        // dscEngine.getAccountCollateralValueInUsd(address user);
+        // dscEngine.getCollateralBalanceOfUser(address user, address token);
+        // dscEngine.getAccountInformation(address user);
+        // dscEngine.getHealthFactor(address user)
+        // dscEngine.calculateHealthFactor(uint256 totalDscMinted, uint256 collateralValueInUsd);
     }
 }
 // first invariant => 128 runs : 1.36s -> 1000 runs : 14.95s (1000 runs * 128 depth)
