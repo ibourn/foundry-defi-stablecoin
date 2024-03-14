@@ -87,6 +87,8 @@ contract Handler is Test {
         usersWithCollateralDeposited.push(msg.sender);
     }
 
+    // CONTINUE ON REVERT (.toml : fail_on_revert = false)
+    // Case when redeeming too much collateral as we have some minted DSC to cover (health factor breaks)
     function redeemCollateral(uint256 collateralSeed, uint256 collateralAmount) public {
         ERC20Mock collateral = _getCollateralFromSeed(collateralSeed);
         uint256 maxCollateralToRedeem = dscEngine.getCollateralBalanceOfUser(msg.sender, address(collateral));
@@ -94,6 +96,9 @@ contract Handler is Test {
         if (collateralAmount == 0) {
             return;
         }
+
+        // (uint256 totalDscMinted, uint256 totalCollateralValueInUsd) = dscEngine.getAccountInformation(msg.sender);
+        // uint256 collateralAmountInUsd = dscEngine.getUsdValue(collateral.address, collateralAmount)
 
         // if ((maxCollateralToRedeem - collateralAmount) <= 0) {
         //     return;
@@ -122,11 +127,11 @@ contract Handler is Test {
         }
         address sender = usersWithCollateralDeposited[addressSeed % usersWithCollateralDeposited.length];
 
-        amountDsc = bound(amountDsc, 0, dsc.balanceOf(msg.sender));
+        amountDsc = bound(amountDsc, 0, dsc.balanceOf(sender));
         if (amountDsc == 0) {
             return;
         }
-        vm.startPrank(msg.sender);
+        vm.startPrank(sender);
         dsc.approve(address(dscEngine), amountDsc);
         dscEngine.burnDsc(amountDsc);
         vm.stopPrank();

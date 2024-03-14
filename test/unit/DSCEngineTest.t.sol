@@ -464,44 +464,45 @@ contract DSCEngineTest is Test {
         // vm.stopPrank();
 
         uint256 liquidatorDscBalance = dsc.balanceOf(LIQUIDATOR);
-        console.log("dscEngine : liquidatorDscMinted After burn : %s", liquidatorDscBalance);
+        console.log("dscEngine : liquidatorDscMinted After burn : %s", liquidatorDscMinted);
         console.log("dsc : liquidatorDscBalance After burn : %s", liquidatorDscBalance);
-        assertEq(liquidatorDscMinted, 0);
+        // He has no more DSC but there's still an amount of minted DSC in the engine registry
+        assertEq(liquidatorDscMinted, 100000000000000000000);
         assertEq(liquidatorDscBalance, 0);
     }
 
-    // function test_MustImproveHealthFactorOnLiquidation() public {
-    //     // Arrange - Setup
-    //     MockMoreDebtDSC mockDsc = new MockMoreDebtDSC(wethUsdPriceFeed);
-    //     tokenAddresses = [weth];
-    //     priceFeedAddresses = [wethUsdPriceFeed];
-    //     address owner = msg.sender;
-    //     vm.prank(owner);
-    //     DSCEngine mockDsce = new DSCEngine(tokenAddresses, priceFeedAddresses, address(mockDsc));
-    //     mockDsc.transferOwnership(address(mockDsce));
-    //     // Arrange - User
-    //     vm.startPrank(USER);
-    //     ERC20Mock(weth).approve(address(mockDsce), COLLATERAL_AMOUNT);
-    //     mockDsce.depositCollateralAndMintDsc(weth, COLLATERAL_AMOUNT, AMOUNT_TO_MINT);
-    //     vm.stopPrank();
+    function test_MustImproveHealthFactorOnLiquidation() public {
+        // Arrange - Setup
+        MockMoreDebtDSC mockDsc = new MockMoreDebtDSC(wethUsdPriceFeed);
+        tokenAddresses = [weth];
+        priceFeedAddresses = [wethUsdPriceFeed];
+        address owner = msg.sender;
+        vm.prank(owner);
+        DSCEngine mockDsce = new DSCEngine(tokenAddresses, priceFeedAddresses, address(mockDsc));
+        mockDsc.transferOwnership(address(mockDsce));
+        // Arrange - User
+        vm.startPrank(USER);
+        ERC20Mock(weth).approve(address(mockDsce), COLLATERAL_AMOUNT);
+        mockDsce.depositCollateralAndMintDsc(weth, COLLATERAL_AMOUNT, AMOUNT_TO_MINT);
+        vm.stopPrank();
 
-    //     // Arrange - Liquidator
-    //     uint256 collateralToCover = 1 ether;
-    //     ERC20Mock(weth).mint(LIQUIDATOR, collateralToCover);
+        // Arrange - Liquidator
+        uint256 collateralToCover = 1 ether;
+        ERC20Mock(weth).mint(LIQUIDATOR, collateralToCover);
 
-    //     vm.startPrank(LIQUIDATOR);
-    //     ERC20Mock(weth).approve(address(mockDsce), collateralToCover);
-    //     uint256 debtToCover = 10 ether;
-    //     mockDsce.depositCollateralAndMintDsc(weth, collateralToCover, AMOUNT_TO_MINT);
-    //     mockDsc.approve(address(mockDsce), debtToCover);
-    //     // Act
-    //     int256 ethUsdUpdatedPrice = 18e8; // 1 ETH = $18
-    //     MockV3Aggregator(wethUsdPriceFeed).updateAnswer(ethUsdUpdatedPrice);
-    //     // Act/Assert
-    //     vm.expectRevert(DSCEngine.DSCEngine__HealthFactorNotImproved.selector);
-    //     mockDsce.liquidate(weth, USER, debtToCover);
-    //     vm.stopPrank();
-    // }
+        vm.startPrank(LIQUIDATOR);
+        ERC20Mock(weth).approve(address(mockDsce), collateralToCover);
+        uint256 debtToCover = 10 ether;
+        mockDsce.depositCollateralAndMintDsc(weth, collateralToCover, AMOUNT_TO_MINT);
+        mockDsc.approve(address(mockDsce), debtToCover);
+        // Act
+        int256 ethUsdUpdatedPrice = 18e8; // 1 ETH = $18
+        MockV3Aggregator(wethUsdPriceFeed).updateAnswer(ethUsdUpdatedPrice);
+        // Act/Assert
+        vm.expectRevert(DSCEngine.DSCEngine__HealthFactorNotImproved.selector);
+        mockDsce.liquidate(weth, USER, debtToCover);
+        vm.stopPrank();
+    }
 
     // // SEE DSCEngine.sol _burnDsc comment
     // function test_LiquidatorCanBurnDscNeededForLiquidation() public liquidated {

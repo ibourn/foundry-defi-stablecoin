@@ -304,6 +304,8 @@ contract DSCEngine is ReentrancyGuard {
      * !!! But what about liquidator DSC ?
      * he mint to pay off debt then his DSC are transfered to the contract to be burned
      * So he has a loan but how to burn it ? => he can't now more send DSC to the contract
+     *
+     * see : https://www.codehawks.com/report/cljx3b9390009liqwuedkn0m0#H-04
      */
 
     /*
@@ -316,9 +318,9 @@ contract DSCEngine is ReentrancyGuard {
     function _burnDsc(address onBehalfOf, address dscFrom, uint256 dscAmountToBurn) private {
         s_userToDscMinted[onBehalfOf] -= dscAmountToBurn;
 
-        if (onBehalfOf != dscFrom) {
-            s_userToDscMinted[dscFrom] -= dscAmountToBurn;
-        }
+        // if (onBehalfOf != dscFrom) {
+        //     s_userToDscMinted[dscFrom] -= dscAmountToBurn;
+        // }
 
         bool success = i_dsc.transferFrom(dscFrom, address(this), dscAmountToBurn);
         if (!success) {
